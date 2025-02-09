@@ -1,0 +1,79 @@
+ftp:
+  ports: [21, 990]
+  scripts:
+    - ftp_enum.py
+
+ssh:
+  ports: [22]
+  scripts:
+    - ssh_enum.py
+
+http:
+  ports: [80, 443, 8080, 8443]
+  scripts:
+    - http_enum.py
+
+smb:
+  ports: [139, 445]
+  scripts:
+    - smb_enum.py
+
+rdp:
+  ports: [3389]
+  scripts:
+    - rdp_enum.py
+
+mysql:
+  ports: [3306]
+  scripts:
+    - mysql_enum.py
+
+mssql:
+  ports: [1433]
+  scripts:
+    - mssql_enum.py
+
+winrm:
+  ports: [5985, 5986]
+  scripts:
+    - winrm_enum.py
+
+snmp:
+  ports: [161]
+  scripts:
+    - snmp_enum.py
+
+telnet:
+  ports: [23]
+  scripts:
+    - telnet_enum.py
+
+oracle:
+  ports: [1521]
+  scripts:
+    - oracle_enum.py
+
+postgres:
+  ports: [5432]
+  scripts:
+    - postgres_enum.py
+
+vnc:
+  ports: [5900, 5901]
+  scripts:
+    - vnc_enum.py
+
+redis:
+  ports: [6379]
+  scripts:
+    - redis_enum.py
+
+citrix:
+  ports: [1494, 2598, 443]
+  scripts:
+    - citrix_enum.py
+
+elasticsearch:
+  ports: [9200, 9300]
+  scripts:
+    - es_enum.py
