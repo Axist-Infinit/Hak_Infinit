@@ -1,84 +1,65 @@
-import os
-import importlib
-import yaml
+"""
+core/executor.py
 
-from core.db_manager import DBManager
-from core.config_manager import ConfigManager
+Logic to orchestrate which enumeration scripts to run based on DB data or configuration.
+"""
+
+import os
+from core import db_manager
+from core.log_manager import logger
+from core.config_manager import get_config_value
+from scripts.utils.common import load_tool_mapping
+from core.plugin_loader import load_plugins  # (New file referenced)
 
 class Executor:
     def __init__(self):
-        self.config = ConfigManager()
-        self.db = DBManager()
+        self.tool_mapping = load_tool_mapping(os.path.join('config', 'tool_mapping.yml'))
+        # Load all enumeration plugins
+        self.plugins = load_plugins()
 
-    def run_enumeration_for_host(self, host_id, interactive=True):
+    def run_enumeration(self):
         """
-        Retrieves services for a given host from the DB,
-        then runs matching enumeration scripts from tool_mapping.yml.
-        If interactive=True, prompt user before running scripts that require user approval.
+        Orchestrate enumeration by reading discovered services from the DB 
+        and matching them with known enumeration scripts or plugins.
         """
-        host_info = self.db.get_host_by_id(host_id)
-        if not host_info:
-            print(f"[!] No host found with ID {host_id}")
+        hosts = db_manager.get_all_hosts()
+        if not hosts:
+            logger.info("No hosts found in DB. Make sure you have parsed Nmap results.")
             return
 
-        # Load the service-to-script mapping
-        tool_mapping_file = os.path.join(self.config.get_config_dir(), "tool_mapping.yml")
-        if not os.path.isfile(tool_mapping_file):
-            print(f"[!] tool_mapping.yml not found at {tool_mapping_file}")
-            return
+        for host in hosts:
+            host_id = host['id']
+            logger.info(f"Running enumeration for Host: {host['ip']} (id={host_id})")
+            services = db_manager.get_services_for_host(host_id)
+            
+            for svc in services:
+                service_name = svc['service_name'].lower()
+                port = svc['port']
+                protocol = svc['protocol']
+                
+                # Check the tool_mapping to see if we have a recommended script
+                # e.g., HTTP => http_enum.py
+                script_name = self.tool_mapping.get(service_name)
+                if script_name:
+                    logger.info(f"Enumerating {service_name} on port {port}")
+                    self._execute_enumeration_script(script_name, host, svc)
 
-        with open(tool_mapping_file, 'r') as f:
-            service_mappings = yaml.safe_load(f) or {}
+                # Additionally, check plugin-based enumeration
+                for plugin in self.plugins:
+                    if plugin.SERVICE_NAME == service_name:
+                        logger.info(f"Running plugin '{plugin.__name__}' for service {service_name}")
+                        plugin.run(host, svc)
 
-        # Retrieve all services for this host from DB
-        services = self.db.get_services_by_host_id(host_id)
-        if not services:
-            print(f"[!] No services found for host ID {host_id}.")
-            return
-
-        ip_address = host_info['ip_address']
-        for service_record in services:
-            service_name = service_record['service_name']
-            port = service_record['port']
-            matched = False
-
-            # Try to match the service name or the port in the tool_mapping
-            for mapping_key, mapping_value in service_mappings.items():
-                mapped_ports = mapping_value.get('ports', [])
-                if (
-                    (service_name and service_name == mapping_key)
-                    or (port in mapped_ports)
-                ):
-                    scripts = mapping_value.get('scripts', [])
-                    for script in scripts:
-                        self.run_script(script, ip_address, port, interactive=interactive)
-                    matched = True
-
-            # If not matched by name or port, you might do a fallback or default approach here
-            if not matched:
-                print(f"[~] No direct mapping found for service={service_name}, port={port}")
-
-    def run_script(self, script_filename, ip_address, port, interactive=True):
+    def _execute_enumeration_script(self, script_name, host, svc):
         """
-        Dynamically imports and runs the enumeration script.
-        If the script sets NEEDS_USER_APPROVAL=True, prompt user to proceed if interactive is True.
+        Dynamically import and run a specific enumeration script by name.
         """
-        script_module_path = f"scripts.enumeration.{script_filename.replace('.py', '')}"
         try:
-            module = importlib.import_module(script_module_path)
-            if hasattr(module, 'enumerate_service'):
-                needs_approval = getattr(module, 'NEEDS_USER_APPROVAL', False)
-                if needs_approval and interactive:
-                    user_input = input(f"[?] {script_filename} may perform brute force or exploit. Proceed? (y/n): ")
-                    if user_input.lower() != 'y':
-                        print(f"[!] Skipping {script_filename} due to user choice.")
-                        return
-
-                print(f"[+] Running {script_filename} for {ip_address}:{port}")
-                module.enumerate_service(ip_address, port)
+            mod_path = f"scripts.enumeration.{script_name.replace('.py','')}"
+            mod = __import__(mod_path, fromlist=[None])
+            if hasattr(mod, 'run'):
+                mod.run(host, svc)
             else:
-                print(f"[!] {script_filename} does not have 'enumerate_service' function.")
-        except FileNotFoundError:
-            print(f"[!] Script {script_filename} not found.")
+                logger.warning(f"No 'run' function found in {script_name}.")
         except Exception as e:
-            print(f"[!] Failed to run script {script_filename} for {ip_address}:{port} - Error: {e}")
+            logger.error(f"Failed to run script {script_name}: {e}")
