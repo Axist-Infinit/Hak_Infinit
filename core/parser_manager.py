@@ -1,15 +1,15 @@
-import xml.etree.ElementTree as ET
+"""
+core/parser_manager.py
 
-def parse_nmap_xml(xml_output):
-    tree = ET.parse(xml_output)
-    root = tree.getroot()
-    hosts = []
-    for host in root.findall('host'):
-        ip = host.find('address').get('addr')
-        ports = []
-        for port in host.find('ports').findall('port'):
-            port_id = port.get('portid')
-            service = port.find('service').get('name')
-            ports.append((port_id, service))
-        hosts.append({'ip': ip, 'ports': ports})
-    return hosts
+Utility functions for parsing Nmap output or other scan outputs.
+May call into scripts/nmap/parse_results.py or other specialized parsers.
+"""
+
+from scripts.nmap.parse_results import parse_nmap_xml
+
+def parse_nmap_file(filepath):
+    """
+    High-level function to parse Nmap XML/greppable output.
+    """
+    # In this example, we simply defer to parse_nmap_xml
+    return parse_nmap_xml(filepath)
